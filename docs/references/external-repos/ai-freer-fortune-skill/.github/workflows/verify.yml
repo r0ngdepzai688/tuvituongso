@@ -1,0 +1,101 @@
+name: Verify
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress runs on the same ref when a new push lands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify (Node ${{ matrix.node }} · Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+        python: ['3.11']
+        # Probe the lower Node bound (declared in INSTALL.md) on a single Python.
+        include:
+          - node: '18'
+            python: '3.11'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install Node.js dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Python dependencies
+        run: python3 scripts/install-python.py
+
+      - name: Run verify suite
+        run: npm run verify
+
+      - name: Scan tracked source for private paths and secret shapes
+        run: node scripts/privacy-check.mjs --tracked
+
+  shellcheck:
+    name: Shellcheck install.sh
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run shellcheck
+        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca
+        with:
+          scandir: '.'
+          severity: warning
+
+  python-install:
+    name: Python install (${{ matrix.os }} · ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11']
+        include:
+          - os: ubuntu-latest
+            python: '3.9'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: npm ci --no-audit --no-fund
+      - run: python scripts/install-python.py
+      - run: python scripts/install-python.py --environment current
+      - run: python scripts/verify-python-install.py

@@ -1,0 +1,12 @@
+{
+  "name": "Kỳ Thư Cổ Môn — Thuật Số & Văn Hóa Việt",
+  "short_name": "Kỳ Thư Cổ Môn",
+  "description": "Nền tảng Tử Vi Đẩu Số, Tứ Trụ Bát Tự, Kỳ Môn Độn Giáp, Lịch Vạn Niên, Văn Khấn & 47 Bộ Cổ Thư Song Ngữ.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EAE3DE",
+  "theme_color": "#175A67",
+  "orientation": "portrait-primary",
+  "lang": "vi",
+  "categories": ["lifestyle", "books", "education"]
+}
